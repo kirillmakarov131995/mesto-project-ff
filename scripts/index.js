@@ -20,28 +20,17 @@ function createCard(cardData, deleteCardFunction) {
     const newCardDeleteButton = newCard.querySelector(".card__delete-button");
 
     newCardImage.src = cardData.link;
+    newCardImage.alt = "место карточки";
     newCardTitle.textContent = cardData.name;
 
-    newCardDeleteButton.addEventListener("click", deleteCardFunction);
+    newCardDeleteButton.addEventListener("click", () => deleteCardFunction(newCard));
 
     return newCard;
 }
 
 // @todo: Функция удаления карточки
-function deleteCard(event) {
-    if (!event)
-        return;
-
-    const element = event.target;
-    const cardContainer = element.closest(".places__item");
-    const cardTitle = cardContainer.querySelector(".card__title");
-
-    const foundCard = initialCards.find(item => item.name === cardTitle.textContent);
-
-    const cardIndex = initialCards.indexOf(foundCard);
-    initialCards.splice(cardIndex, 1);
-
-    renderCards();
+function deleteCard(card) {
+    card.remove();
 }
 
 // @todo: Вывести карточки на страницу
@@ -49,10 +38,9 @@ function renderCards() {
     if (!cardsContainer)
         return;
 
-    const cardsNodes = Array.from(cardsContainer.children);
-
     // delete all existing cards
-    cardsNodes.forEach(item => item.remove());
+    // const cardsNodes = Array.from(cardsContainer.children);
+    // cardsNodes.forEach(item => item.remove());
 
     // load all cards from array
     initialCards.forEach(item => cardsContainer.append(createCard(item, deleteCard)));
