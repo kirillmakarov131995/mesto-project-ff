@@ -1,3 +1,7 @@
+// const cardsListClassName = ".places__list";
+// const cardTitleClassName = ".card__title";
+// const cardImageClassName = ".card__image";
+
 // @todo: Темплейт карточки
 const cardTemplate = document.querySelector("#card-template").content;
 
@@ -32,9 +36,7 @@ function deleteCard(event) {
     const cardContainer = element.closest(".places__item");
     const cardTitle = cardContainer.querySelector(".card__title");
 
-    const foundCard = initialCards.find((item) => {
-        return item.name === cardTitle.textContent;
-    });
+    const foundCard = initialCards.find(item => item.name === cardTitle.textContent);
 
     const cardIndex = initialCards.indexOf(foundCard);
     initialCards.splice(cardIndex, 1);
@@ -50,14 +52,10 @@ function renderCards() {
     const cardsNodes = Array.from(cardsContainer.children);
 
     // delete all existing cards
-    cardsNodes.forEach((item) => {
-        item.remove();
-    });
+    cardsNodes.forEach(item => item.remove());
 
     // load all cards from array
-    initialCards.forEach((item) => {
-        cardsContainer.append(createCard(item, deleteCard));
-    });
+    initialCards.forEach(item => cardsContainer.append(createCard(item, deleteCard)));
 }
 
 renderCards();
