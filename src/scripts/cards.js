@@ -1,7 +1,3 @@
-// import arkhyzImage from './images/jordan.jpg';
-// import chelyabinskImage from './images/james.jpg';
-// import ivanovoImage from './images/bryant.jpg';
-
 const initialCards = [
 	{
 		name: "Архыз",

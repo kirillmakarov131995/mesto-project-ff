@@ -19,17 +19,4 @@ export const closeModal = (modal) => {
 };
 
 
-export const handlePopup = (popupElement) => {
-    const closeButton = popupElement.querySelector(".popup__close");
-    closeButton.addEventListener("click", () => {
-        closeModal(popupElement);
-    });
-
-    popupElement.addEventListener("mousedown", (event) => {
-        if (event.target.classList.contains("popup")) {
-            closeModal(popupElement);
-        }
-    });
-}
-
 
