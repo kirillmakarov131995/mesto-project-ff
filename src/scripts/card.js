@@ -1,9 +1,7 @@
 let cardTemplate = null;
-let cardsContainer = null;
 
-function setContainers(newCardTemplate, newCardsContainer) {
+function setContainers(newCardTemplate) {
   cardTemplate = newCardTemplate;
-  cardsContainer = newCardsContainer;
 }
 
 // @todo: Функция создания карточки
@@ -48,14 +46,18 @@ function createCard(cardData, options = {}, ownerId) {
       ? (event) => options.previewImageFunction(event)
       : (event) => {}
   );
-  newCardLikeButton.addEventListener("click", (event) =>
-    likeCard(
+
+  newCardLikeButton.addEventListener("click", (event) => {
+    const isLiked = event.target.classList.contains(
+      "card__like-button_is-active"
+    );
+    options.likeCardFunction(
       event,
-      newCard.id,
+      newCard,
       newCardLikeButtonCountElement,
-      options.likeCardFunction
-    )
-  );
+      isLiked
+    );
+  });
 
   // check likes if there is the owners like
   const hasOwnerLike = cardData.likes.some((item) => {
@@ -75,22 +77,17 @@ function deleteCard(card) {
   card.remove();
 }
 
-function likeCard(event, cardId, likeButtonCountElement, callback) {
+function updateLikes(data, buttonElement, countElement, isLiked) {
+  // return
   // event.target.classList.toggle("card__like-button_is-active");
+  // if (!callback) return;
+  console.log(buttonElement);
 
-  const isLiked = event.target.classList.contains(
+  buttonElement.classList[isLiked ? "add" : "remove"](
     "card__like-button_is-active"
   );
 
-  if (isLiked) {
-    event.target.classList.remove("card__like-button_is-active");
-  } else {
-    event.target.classList.add("card__like-button_is-active");
-  }
-
-  if (!callback) return;
-
-  callback(cardId, likeButtonCountElement, isLiked);
+  countElement.textContent = data.likes.length;
 }
 
-export { createCard, setContainers };
+export { createCard, setContainers, updateLikes };

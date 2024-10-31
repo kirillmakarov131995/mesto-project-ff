@@ -1,7 +1,7 @@
 import "../pages/index.css"; // добавьте импорт главного файла стилей
 // import initialCards from "./cards.js";
 import { openModal, closeModal } from "./modal.js";
-import { createCard, setContainers } from "./card.js";
+import { createCard, setContainers, updateLikes } from "./card.js";
 import { enableValidation, clearValidation } from "./validation.js";
 import {
   updateUserProfile,
@@ -78,14 +78,13 @@ const popupAddForm = document.forms["new-place"];
 // CARDS LOGIC
 // ---------------------
 
-// function renderCard(item, options, method = "prepend") {
+function renderCard(item, options, userProfileId, method = "prepend") {
+  // создаем карточку, передавая обработчики в виде объекта `callbacks`
+  const cardElement = createCard(item, options, userProfileId);
 
-//   // создаем карточку, передавая обработчики в виде объекта `callbacks`
-//   const cardElement = createCard(item, options);
-
-//   // вставляем карточку, используя метод (вставится `prepend` или `append`)
-//   cardsContainer[method](cardElement);
-// }
+  // вставляем карточку, используя метод (вставится `prepend` или `append`)
+  cardsContainer[method](cardElement);
+}
 
 function renderCards(data, userProfileId) {
   if (!cardsContainer) return;
@@ -99,7 +98,7 @@ function renderCards(data, userProfileId) {
       createCard(
         item,
         {
-          deleteCardFunction: handleDeleteCard,
+          deleteCardFunction: setCardToRemove,
           previewImageFunction: previewImage,
           likeCardFunction: updateLikeState,
         },
@@ -112,6 +111,7 @@ function renderCards(data, userProfileId) {
 function previewImage(event) {
   popupImage.src = event.target.src;
   popupTitle.textContent = event.target.alt;
+  popupImage.alt = event.target.alt;
 
   // to make changing the image without popups
   setTimeout(() => {
@@ -163,8 +163,10 @@ popupEditForm.addEventListener("submit", function (event) {
       nameElement.textContent = data.name;
       descriptionElement.textContent = data.about;
     })
-    .finally(() => {
+    .then(() => {
       closeModal(popupEditWindow);
+    })
+    .finally(() => {
       setLoadingButtonState(false, event.target.elements["submit-button"]);
     })
     .catch((err) => {
@@ -186,15 +188,28 @@ popupAddForm.addEventListener("submit", (event) => {
     name: popupAddForm["place-name"].value,
     link: popupAddForm.link.value,
   })
-    .then((data) => {
-      loadCards(userId);
+    .then((item) => {
+      // loadCards(userId);
+      // console.log(item)
+      renderCard(
+        item,
+        {
+          deleteCardFunction: setCardToRemove,
+          previewImageFunction: previewImage,
+          likeCardFunction: updateLikeState,
+        },
+        userId,
+        "prepend"
+      );
     })
-    .finally(() => {
+    .then(() => {
       closeModal(popupNewCardWindow);
-      setLoadingButtonState(false, event.target.elements["submit-button"]);
     })
     .catch((err) => {
       console.log(err);
+    })
+    .finally(() => {
+      setLoadingButtonState(false, event.target.elements["submit-button"]);
     });
 });
 
@@ -211,37 +226,42 @@ popupEditProfileImageForm.addEventListener("submit", (event) => {
   updateUserProfileAvatar({
     avatar: popupEditProfileImageForm.elements["link"].value,
   })
-    .finally(() => {
+    .then((data) => {
+      profileImageElement.style.backgroundImage = `url(${data.avatar})`;
       closeModal(popupEditProfileImageWindow);
-      setLoadingButtonState(false, event.target.elements["submit-button"]);
     })
     .catch((err) => {
       console.log(err);
+    })
+    .finally(() => {
+      setLoadingButtonState(false, event.target.elements["submit-button"]);
     });
 });
 
 // delete card confirm popup
 let cardForDelete = {};
 
-function handleDeleteCard(cardId, cardElement) {
+function setCardToRemove(cardId, cardElement) {
   cardForDelete = {
     id: cardId,
     cardElement,
   };
+
   openModal(popupDeleteWindow);
 }
 
 popupDeleteForm.addEventListener("submit", function (event) {
   event.preventDefault();
+
   if (!cardForDelete.cardElement) return;
 
   removeCard(cardForDelete.id)
+    // .then((data) => {
+    //   console.log(data);
+    // })
     .then(() => {
+      cardForDelete.cardElement.remove();
       closeModal(popupDeleteWindow);
-      cardForDelete = {};
-    })
-    .finally(() => {
-      loadCards(userId);
     })
     .catch((err) => {
       console.log(err);
@@ -264,19 +284,21 @@ function setLoadingButtonState(enabled, buttonElement) {
   buttonElement.classList[enabled ? "add" : "remove"]("popup__button-sending");
 }
 
-function updateLikeState(cardId, countElement, shouldBeRemoved) {
-  if (shouldBeRemoved) {
-    removeLike(cardId)
+function updateLikeState(event, cardElement, countElement, isLiked) {
+  if (!cardElement.id || !cardElement || !countElement) return;
+
+  if (isLiked) {
+    removeLike(cardElement.id)
       .then((data) => {
-        countElement.textContent = data.likes.length;
+        updateLikes(data, event.target, countElement, false);
       })
       .catch((err) => {
         console.log(err);
       });
   } else {
-    addLike(cardId)
+    addLike(cardElement.id)
       .then((data) => {
-        countElement.textContent = data.likes.length;
+        updateLikes(data, event.target, countElement, true);
       })
       .catch((err) => {
         console.log(err);
@@ -286,21 +308,18 @@ function updateLikeState(cardId, countElement, shouldBeRemoved) {
 
 function loadProfile() {
   return getProfileInfo()
-    .then((data) => {
-      nameElement.textContent = data.name;
-      descriptionElement.textContent = data.about;
-      profileImageElement.style.backgroundImage = `url(${data.avatar})`;
-      return data;
+    .then((profile) => {
+      return profile;
     })
-    .then((data) => {
-      userId = data._id;
+    .catch((err) => {
+      console.log(err);
     });
 }
 
-function loadCards(user) {
+function loadCards() {
   return getCards()
-    .then((data) => {
-      renderCards(data, user);
+    .then((cards) => {
+      return cards;
     })
     .catch((err) => {
       console.log(err);
@@ -308,19 +327,14 @@ function loadCards(user) {
 }
 
 function loadData() {
-  Promise.all([
-    new Promise((resolve) => {
-      loadProfile()
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          resolve();
-        });
-    }),
-  ])
-    .then((i) => {
-      loadCards(userId);
+  Promise.all([loadProfile(), loadCards()])
+    .then(([profile, cards]) => {
+      nameElement.textContent = profile.name;
+      descriptionElement.textContent = profile.about;
+      profileImageElement.style.backgroundImage = `url(${profile.avatar})`;
+      userId = profile._id;
+
+      renderCards(cards, profile._id);
     })
     .catch((err) => {
       console.log(err);
@@ -329,7 +343,7 @@ function loadData() {
 
 enableValidation(defaultFormClasses);
 
-setContainers(cardTemplate, cardsContainer);
+setContainers(cardTemplate);
 
 // initial loadup
 loadData();
